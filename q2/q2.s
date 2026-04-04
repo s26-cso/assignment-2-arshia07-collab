@@ -1,7 +1,9 @@
 .globl main
 .section .rodata
 
-fmt: .string "%lld "
+fmt: .string "%lld"
+
+fmt_sep: .string " "
 
 newline: .string "\n"
 .section .text
@@ -50,8 +52,10 @@ input_loop:
     sd t0, 0(sp)
     call atoi               # converts a0 to int value as it reads it as string
     ld t0, 0(sp)            # restore t0
-
     addi sp, sp, 8
+
+    sext.w a0, a0           # sign extend 32-bit atoi result to 64-bit (fixes negative/large values)
+
     slli t1, t0, 3          # we again restart the process 
     add t1, s2, t1          # this is for storing values in array
     sd a0, 0(t1)   
@@ -108,12 +112,26 @@ nge_done:
     mv t0, x0
 
 print:
-    bge t0, s0, done
+    bge t0, s0, print_done 
 
     slli t1, t0, 3
     add t1, s3, t1              # result array
-    ld a1, 0(t1)         
+    ld a1, 0(t1)
 
+
+    beq t0, x0, print_num      # if first element, skip separator
+    addi sp, sp, -8
+    sd t0, 0(sp)
+    la a0, fmt_sep
+    call printf
+    ld t0, 0(sp)
+
+    addi sp, sp, 8
+    slli t1, t0, 3
+    add t1, s3, t1
+    ld a1, 0(t1)               # reload a1 (printf clobbered it)
+
+print_num:
     la a0, fmt
     addi sp, sp, -8             # save t0 around printf call (printf clobbers t registers)
     sd t0, 0(sp)
@@ -138,3 +156,5 @@ done:
     ld s5, 8(sp)
     addi sp, sp, 64
     ret
+
+    
