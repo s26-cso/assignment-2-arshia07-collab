@@ -1,20 +1,18 @@
 .section .rodata
-
-filename: .string "input.txt"
-yes_String:  .string "Yes\n"
-no_String:   .string "No\n"
+filename:   .string "input.txt"
+mode:       .string "r"
+yes_string: .string "Yes\n"
+no_string:  .string "No\n"
 
 .section .text
-
 .globl main
 
 main:
-
-    # s0 = fd tells which file
+    # s0 = FILE* fp
     # s1 = left pointer
     # s2 = right pointer
-    # t0 = left character
-    # t1 = right character
+    # t0 = left char
+    # t1 = right char
 
     addi sp, sp, -32
     sd ra, 24(sp)
@@ -22,108 +20,74 @@ main:
     sd s1, 8(sp)
     sd s2, 0(sp)
 
-    # openat(AT_FDCWD, "input.txt", O_RDONLY)
-    li a0, -100           # AT_FDCWD
-    la a1, filename       # a1 = filename
-    li a2, 0              # a2 = O_RDONLY
-    li a3, 0
-    li a7, 56             # syscall: openat
-    ecall
-    mv s0, a0             # s0 = fd
+    # fopen("input.txt", "r")
+    la a0, filename
+    la a1, mode
+    call fopen
+    mv s0, a0               # s0 = FILE* fp
 
-    # size = lseek(fd, 0, SEEK_END)
+    # fseek(fp, 0, SEEK_END)
     mv a0, s0
     li a1, 0
-    li a2, 2              # SEEK_END
-    li a7, 62             # syscall: lseek
-    ecall
+    li a2, 2                # SEEK_END
+    call fseek
 
-    mv s2, a0             # s2 = size
-    addi s2, s2, -1       # right = size - 1 (last byte index)
-    mv s1, x0              # left = 0
+    # size = ftell(fp)
+    mv a0, s0
+    call ftell
+    mv s2, a0               # s2 = size
+    addi s2, s2, -1         # right = size - 1
 
     # peek at last byte to check for trailing newline
     mv a0, s0
     mv a1, s2
-    li a2, 0              # SEEK_SET
-    li a7, 62             # syscall: lseek
-    ecall
-    mv a0, s0
-    addi a1, sp, 28       # temp buffer (inside stack frame)
-    li a2, 1
-    li a7, 63             # syscall: read
-    ecall
-    lb t0, 28(sp)
-    li t1, 10             # '\n' = ASCII 10
-    bne t0, t1, loop      # no trailing newline, right is already correct
-    addi s2, s2, -1       # trailing newline found, skip it
+    li a2, 0                # SEEK_SET
+    call fseek
 
+    mv a0, s0
+    call fgetc              # read last char
+    li t1, 10               # '\n'
+    bne a0, t1, loop        # no newline, skip
+    addi s2, s2, -1         # trailing newline, move left
+
+    mv s1, x0               # left = 0
 
 loop:
-
-    # if (left >= right) then it is a palindrome
+    # if left >= right, it's a palindrome
     bge s1, s2, yes
 
-
-    # lseek(fd, left, SEEK_SET)
+    # fseek to left, read char
     mv a0, s0
     mv a1, s1
-    li a2, 0              # SEEK_SET
-    li a7, 62             # syscall: lseek
-    ecall
-
-
-    # read(fd, &buf, 1)
+    li a2, 0                # SEEK_SET
+    call fseek
     mv a0, s0
-    addi a1, sp, 28       # temp buffer (inside stack frame)
-    li a2, 1
-    li a7, 63             # syscall: read
-    ecall
+    call fgetc
+    mv t0, a0               # t0 = left char
 
-
-    lb t0, 28(sp)         # t0 = left char
-
-
-    # lseek(fd, right, SEEK_SET)
+    # fseek to right, read char
     mv a0, s0
     mv a1, s2
-    li a2, 0
-    li a7, 62             # syscall: lseek
-    ecall
-
-    # read(fd, &buf, 1)
+    li a2, 0                # SEEK_SET
+    call fseek
     mv a0, s0
-    addi a1, sp, 29       # temp buffer (inside stack frame)
-    li a2, 1
-    li a7, 63
-    ecall
+    call fgetc
+    mv t1, a0               # t1 = right char
 
-    lb t1, 29(sp)         # t1 = right char
+    bne t0, t1, no          # chars don't match → not palindrome
 
-
-    bne t0, t1, no
-
-
-    addi s1, s1, 1        # left++
-    addi s2, s2, -1       # right--
+    addi s1, s1, 1          # left++
+    addi s2, s2, -1         # right--
     j loop
 
-
 yes:
-    li a0, 1              # fd = stdout
-    la a1, yes_String
-    li a2, 4              # length of "Yes\n"
-    li a7, 64             # syscall: write
-    ecall
+    la a0, yes_string
+    call printf
     j done
 
-
 no:
-    li a0, 1              # fd = stdout
-    la a1, no_String
-    li a2, 3              # length of "No\n"
-    li a7, 64             # syscall: write
-    ecall
+    la a0, no_string
+    call printf
 
 done:
     ld ra, 24(sp)
@@ -131,7 +95,7 @@ done:
     ld s1, 8(sp)
     ld s2, 0(sp)
     addi sp, sp, 32
-    li a0, 0              # exit code 0
-    li a7, 93             # syscall: exit
+
+    li a0, 0
+    li a7, 93
     ecall
-    
