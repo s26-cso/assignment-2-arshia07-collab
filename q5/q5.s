@@ -108,19 +108,15 @@ loop:
 
 
 yes:
-    li a0, 1              # fd = stdout
-    la a1, yes_String
-    li a2, 4              # length of "Yes\n"
-    li a7, 64             # syscall: write
+    la a0, yes_String
+    li a7, 4              # syscall: print string
     ecall
     j done
 
 
 no:
-    li a0, 1              # fd = stdout
-    la a1, no_String
-    li a2, 3              # length of "No\n"
-    li a7, 64             # syscall: write
+    la a0, no_String
+    li a7, 4              # syscall: print string
     ecall
 
 done:
