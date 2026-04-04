@@ -126,7 +126,7 @@ print:
 
 print_done:
     la a0, newline              # flush output with newline
-    call printf
+    call printf                 # calling print function
 
 done:
     ld ra, 56(sp)
