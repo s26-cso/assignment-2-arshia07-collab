@@ -1,8 +1,8 @@
 .section .rodata
 
 filename: .string "input.txt"
-yes_String:  .string "Yes\n"
-no_String:   .string "No\n"
+yes_String:  .string "Yes"
+no_String:   .string "No"
 
 .section .text
 
