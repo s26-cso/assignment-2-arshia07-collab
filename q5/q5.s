@@ -37,8 +37,24 @@ main:
     ecall
 
     mv s2, a0             # s2 = size
-    addi s2, s2, -2       # right = size - 2 (skip trailing newline)
+    addi s2, s2, -1       # right = size - 1 (point to last byte)
     mv s1, x0              # left = 0
+
+    # peek at last byte to check for trailing newline
+    mv a0, s0
+    mv a1, s2
+    li a2, 0              # SEEK_SET
+    li a7, 1025
+    ecall
+    mv a0, s0
+    addi a1, sp, 28       # temp buffer (inside stack frame)
+    li a2, 1
+    li a7, 63             # syscall: read
+    ecall
+    lb t0, 28(sp)
+    li t1, 10             # '\n' = ASCII 10
+    bne t0, t1, loop      # no trailing newline, right is already correct
+    addi s2, s2, -1       # trailing newline found, skip it
 
 
 loop:
@@ -92,14 +108,20 @@ loop:
 
 
 yes:
-    la a0, yes_String
-    call printf           # printf("Yes\n")
+    li a0, 1              # fd = stdout
+    la a1, yes_String
+    li a2, 4              # length of "Yes\n"
+    li a7, 64             # syscall: write
+    ecall
     j done
 
 
 no:
-    la a0, no_String
-    call printf           # printf("No\n")
+    li a0, 1              # fd = stdout
+    la a1, no_String
+    li a2, 3              # length of "No\n"
+    li a7, 64             # syscall: write
+    ecall
 
 done:
     ld ra, 24(sp)
