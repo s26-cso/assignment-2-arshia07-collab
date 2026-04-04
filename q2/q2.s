@@ -2,6 +2,7 @@
 .section .rodata
 
 fmt: .string "%lld "
+fmt_no_space: .string "%lld"
 
 newline: .string "\n"
 .section .text
@@ -108,19 +109,38 @@ nge_done:
     mv t0, x0
 
 print:
-    bge t0, s0, done
+    bge t0, s0, print_done
 
     slli t1, t0, 3
     add t1, s3, t1              # result array
     ld a1, 0(t1)         
 
+    addi t2, s0, -1        # t2 = n-1
+    beq t0, t2, last_element  # if i == n-1 -> last element
+
+    # normal case: print with space
     la a0, fmt
     addi sp, sp, -8             # save t0 around printf call (printf clobbers t registers)
     sd t0, 0(sp)
+
+    call printf
+    ld t0, 0(sp)
+                                # restore t0
+    addi sp, sp, 8
+    j next
+
+last_element:
+    # print without space
+    la a0, fmt_no_space
+    addi sp, sp, -8
+
+    sd t0, 0(sp)
     call printf
 
-    ld t0, 0(sp)                # restore t0
+    ld t0, 0(sp)
     addi sp, sp, 8
+
+next:
     addi t0, t0, 1              # increment the loop
     j print
 
