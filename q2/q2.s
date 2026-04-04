@@ -108,7 +108,7 @@ nge_done:
     mv t0, x0
 
 print:
-    bge t0, s0, print_done
+    bge t0, s0, done
 
     slli t1, t0, 3
     add t1, s3, t1              # result array
