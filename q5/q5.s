@@ -108,4 +108,5 @@ done:
     ld s1, 8(sp)
     ld s2, 0(sp)
     addi sp, sp, 32
+    li a0, 0              # return 0 from main
     ret
