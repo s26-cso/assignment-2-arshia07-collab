@@ -3,7 +3,7 @@
 filename: .string "input.txt"
 yes_String:  .string "Yes\n"
 no_String:   .string "No\n"
-mode_r:      .string "r"
+mode:      .string "r"
 
 .section .text
 
@@ -25,7 +25,7 @@ main:
 
     # fp = fopen("input.txt", "r")
     la a0, filename       # a0 = filename
-    la a1, mode_r         # a1 = "r"
+    la a1, mode         # a1 = "r"
     call fopen
     mv s0, a0             # s0 = FILE* fp
 
@@ -42,11 +42,13 @@ main:
     addi s2, s2, -1       # right = size - 1 (last byte index)
     mv s1, x0              # left = 0
 
+
     # peek at last byte to check for trailing newline
     mv a0, s0
     mv a1, s2
     li a2, 0              # SEEK_SET
     call fseek
+    
     mv a0, s0
     call fgetc
     li t1, 10             # '\n' = ASCII 10
