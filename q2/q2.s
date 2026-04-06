@@ -18,6 +18,7 @@ main:
     sd s5, 8(sp)
 
     mv s0, a0          # s0 = argc
+    
     mv s1, a1          # s1 = argv
     addi s0, s0, -1    # s0 = n = argc - 1
 
